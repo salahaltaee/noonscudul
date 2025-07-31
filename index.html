@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>سجل حضور الأساتذة</title>
+  <title>تسجيل حضور الأساتذة</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"></script>
@@ -11,20 +11,37 @@
 <body class="bg-light">
 
 <div class="container mt-5">
-  <h2 class="text-center mb-4">📋 سجل الحضور</h2>
-  <table class="table table-striped text-center">
-    <thead class="table-dark">
-      <tr>
-        <th>اسم الأستاذ</th>
-        <th>وقت الدخول</th>
-      </tr>
+  <h2 class="text-center mb-4">📌 تسجيل الحضور</h2>
+
+  <div class="mb-3">
+    <label for="teacherSelect" class="form-label">اختر الأستاذ</label>
+    <select class="form-select" id="teacherSelect">
+      <option value="" disabled selected>-- اختر --</option>
+      <option>أيوب السراي</option>
+      <option>عمر اسكندر</option>
+      <option>زكية السلامي</option>
+      <option>حيدر عبد</option>
+      <option>مصطفى صلاح</option>
+      <option>حذيفة الخالدي</option>
+    </select>
+    <input type="text" id="newTeacher" class="form-control mt-2" placeholder="أو أضف أستاذ جديد">
+  </div>
+
+  <button class="btn btn-primary mb-4" onclick="submitAttendance()">تسجيل الحضور</button>
+
+  <h5 class="mb-3">🧾 الأساتذة الحاضرين اليوم:</h5>
+  <table class="table table-bordered text-center bg-white">
+    <thead class="table-secondary">
+      <tr><th>الاسم</th><th>وقت الدخول</th><th>وقت الخروج</th></tr>
     </thead>
-    <tbody id="attendanceTable"></tbody>
+    <tbody id="todayTable"></tbody>
   </table>
+
+  <a href="dashboard.html" class="btn btn-success mt-3">عرض الداشبورد</a>
 </div>
 
 <script>
-  const firebaseConfig = {
+  const config = {
     apiKey: "AIzaSyBvNRBl3cObiLC7GufXyCnF6BlKLM3oWXw",
     authDomain: "register-app-534bf.firebaseapp.com",
     databaseURL: "https://register-app-534bf-default-rtdb.firebaseio.com",
@@ -32,22 +49,57 @@
     projectNumber: "1042312911162"
   };
 
-  firebase.initializeApp(firebaseConfig);
-  const dbRef = firebase.database().ref("attendance");
+  firebase.initializeApp(config);
+  const db = firebase.database();
 
-  dbRef.on("value", (snapshot) => {
-    const table = document.getElementById("attendanceTable");
-    table.innerHTML = "";
-    const data = snapshot.val();
-    for (let key in data) {
-      const row = `
-        <tr>
-          <td>${data[key].name}</td>
-          <td>${data[key].time}</td>
-        </tr>`;
-      table.innerHTML += row;
-    }
-  });
+  function getTodayDate() {
+    const now = new Date();
+    return now.toISOString().split("T")[0];
+  }
+
+  function getCurrentTime() {
+    const now = new Date();
+    return now.toTimeString().split(" ")[0].slice(0,5);
+  }
+
+  function submitAttendance() {
+    let name = document.getElementById("teacherSelect").value;
+    const newName = document.getElementById("newTeacher").value.trim();
+    if (newName) name = newName;
+
+    if (!name) return alert("يرجى اختيار أو إدخال اسم الأستاذ");
+
+    const date = getTodayDate();
+    const time = getCurrentTime();
+
+    const ref = db.ref("attendance/" + date).push();
+    ref.set({ name, time_in: time });
+    document.getElementById("newTeacher").value = "";
+  }
+
+  function loadTodayAttendance() {
+    const today = getTodayDate();
+    const ref = db.ref("attendance/" + today);
+    ref.on("value", snapshot => {
+      const tbody = document.getElementById("todayTable");
+      tbody.innerHTML = "";
+      const data = snapshot.val();
+      if (!data) return;
+      Object.entries(data).forEach(([id, val]) => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${val.name}</td>
+            <td>${val.time_in}</td>
+            <td>
+              <input type="text" class="form-control" placeholder="وقت الخروج"
+                onchange="db.ref('attendance/${today}/${id}/time_out').set(this.value)">
+            </td>
+          </tr>`;
+      });
+    });
+  }
+
+  loadTodayAttendance();
 </script>
 
 </body>
