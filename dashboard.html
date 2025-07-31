@@ -31,6 +31,8 @@
 
   function getMonthlyStats() {
     const stats = {};
+    const entriesByTeacher = {};
+
     db.ref("attendance").once("value", snapshot => {
       const data = snapshot.val();
       if (!data) return;
@@ -38,19 +40,27 @@
       Object.entries(data).forEach(([date, entries]) => {
         Object.values(entries).forEach(entry => {
           const name = entry.name;
-          if (!stats[name]) stats[name] = 0;
+          if (!stats[name]) {
+            stats[name] = 0;
+            entriesByTeacher[name] = [];
+          }
           stats[name]++;
+          entriesByTeacher[name].push({ date, time_in: entry.time_in, time_out: entry.time_out || "-" });
         });
       });
 
       const visitsList = document.getElementById("visitsList");
       visitsList.innerHTML = "";
+
       Object.entries(stats)
         .sort((a, b) => b[1] - a[1])
         .forEach(([name, count]) => {
           const li = document.createElement("li");
-          li.className = "list-group-item d-flex justify-content-between";
-          li.innerHTML = `<strong>${name}</strong><span>${count} زيارة</span>`;
+          li.className = "list-group-item d-flex justify-content-between align-items-center";
+          li.innerHTML = `
+            <div><strong>${name}</strong> - ${count} زيارة</div>
+            <a href="teacher.html?name=${encodeURIComponent(name)}" class="btn btn-sm btn-info">📄 عرض التفاصيل</a>
+          `;
           visitsList.appendChild(li);
         });
 
