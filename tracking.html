@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>صفحة المتابعة</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+</head>
+<body class="bg-light">
+
+<div class="container py-4">
+  <h3 class="text-center mb-4">📋 صفحة المتابعة</h3>
+
+  <!-- القسم الأول: من حضر بتاريخ معين -->
+  <div class="mb-4">
+    <h5>📅 اختر التاريخ:</h5>
+    <input type="date" id="dateInput" class="form-control mb-2" onchange="loadByDate()">
+    <div id="dailyCards" class="row g-3"></div>
+  </div>
+
+  <hr>
+
+  <!-- القسم الثاني: تقرير شهري -->
+  <div class="mb-4">
+    <h5>🗓️ اختر شهر:</h5>
+    <input type="month" id="monthInput" class="form-control mb-2" onchange="loadByMonth()">
+    <div id="monthlyCards" class="row g-3"></div>
+  </div>
+</div>
+
+<script>
+  const config = {
+    apiKey: "AIzaSyBvNRBl3cObiLC7GufXyCnF6BlKLM3oWXw",
+    authDomain: "register-app-534bf.firebaseapp.com",
+    databaseURL: "https://register-app-534bf-default-rtdb.firebaseio.com",
+    projectId: "register-app-534bf",
+    projectNumber: "1042312911162"
+  };
+
+  firebase.initializeApp(config);
+  const db = firebase.database();
+
+  // تابع جلب بيانات حسب التاريخ
+  function loadByDate() {
+    const date = document.getElementById("dateInput").value;
+    const container = document.getElementById("dailyCards");
+    container.innerHTML = "";
+
+    if (!date) return;
+
+    db.ref(`attendance/${date}`).once("value", snapshot => {
+      const data = snapshot.val();
+      if (!data) {
+        container.innerHTML = `<p class="text-muted text-center">لا يوجد حضور في هذا التاريخ.</p>`;
+        return;
+      }
+
+      Object.values(data).forEach(entry => {
+        const col = document.createElement("div");
+        col.className = "col-md-4";
+        col.innerHTML = `
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <h5>${entry.name}</h5>
+              <p>⏰ دخول: ${entry.timeIn || "-"}<br>🚪 خروج: ${entry.timeOut || "-"}</p>
+            </div>
+          </div>
+        `;
+        container.appendChild(col);
+      });
+    });
+  }
+
+  // تابع جلب بيانات حسب الشهر
+  function loadByMonth() {
+    const month = document.getElementById("monthInput").value; // مثلا 2025-08
+    const container = document.getElementById("monthlyCards");
+    container.innerHTML = "";
+
+    if (!month) return;
+
+    db.ref("attendance").once("value", snapshot => {
+      const data = snapshot.val();
+      if (!data) return;
+
+      const result = {};
+
+      Object.entries(data).forEach(([date, dayEntries]) => {
+        if (date.startsWith(month)) {
+          Object.values(dayEntries).forEach(entry => {
+            if (!result[entry.name]) result[entry.name] = [];
+            result[entry.name].push({ date, timeIn: entry.timeIn });
+          });
+        }
+      });
+
+      if (Object.keys(result).length === 0) {
+        container.innerHTML = `<p class="text-muted text-center">لا يوجد بيانات في هذا الشهر.</p>`;
+        return;
+      }
+
+      Object.entries(result).forEach(([name, visits]) => {
+        const col = document.createElement("div");
+        col.className = "col-md-6";
+
+        const visitsHtml = visits.map(v => `<li>${v.date} - ${v.timeIn || "-"}</li>`).join("");
+
+        col.innerHTML = `
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <h5>${name}</h5>
+              <ul>${visitsHtml}</ul>
+            </div>
+          </div>
+        `;
+
+        container.appendChild(col);
+      });
+    });
+  }
+</script>
+
+</body>
+</html>
