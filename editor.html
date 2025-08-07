@@ -75,56 +75,41 @@
         return;
       }
 
-   function loadDayData() {
-  currentDate = document.getElementById("dateSelect").value;
-  document.getElementById("editorForm").classList.remove("d-none");
-  entriesArray = [];
+      let index = 0;
+      for (const [key, entry] of Object.entries(data)) {
+        entriesArray.push({ key, ...entry });
 
-  db.ref(`attendance/${currentDate}`).once("value", snapshot => {
-    const data = snapshot.val();
-    const container = document.getElementById("editorList");
-    container.innerHTML = "";
+        db.ref(`editingStatus/${currentDate}/${key}`).once("value", statusSnap => {
+          const status = statusSnap.val() || {};
+          const col = document.createElement("div");
+          col.className = "col-md-6";
 
-    if (!data) {
-      container.innerHTML = `<p class="text-muted text-center">لا يوجد حضور في هذا اليوم.</p>`;
-      return;
-    }
-
-    Object.entries(data).forEach(([key, entry], index) => {
-      entriesArray.push({ key, ...entry });
-
-      db.ref(`editingStatus/${currentDate}/${key}`).once("value", statusSnap => {
-        const status = statusSnap.val() || {};
-        const col = document.createElement("div");
-        col.className = "col-md-6";
-
-        col.innerHTML = `
-          <div class="card shadow-sm">
-            <div class="card-body">
-              <h5 class="card-title">${entry.name}</h5>
-              <p class="card-text">⏰ دخول: ${entry.timeIn || "-"} - خروج: ${entry.timeOut || "-"}</p>
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="edited_${index}" ${status.edited ? "checked" : ""}>
-                <label class="form-check-label" for="edited_${index}">✅ تمت المنتجة</label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="filmed_${index}" ${status.filmed ? "checked" : ""}>
-                <label class="form-check-label" for="filmed_${index}">🎥 تم التصوير</label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="uploaded_${index}" ${status.uploaded ? "checked" : ""}>
-                <label class="form-check-label" for="uploaded_${index}">☁️ تم رفع الحلقة</label>
+          col.innerHTML = `
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <h5 class="card-title">${entry.name}</h5>
+                <p class="card-text">⏰ دخول: ${entry.timeIn || "-"} - خروج: ${entry.timeOut || "-"}</p>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="edited_${index}" ${status.edited ? "checked" : ""}>
+                  <label class="form-check-label" for="edited_${index}">✅ تمت المنتجة</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="filmed_${index}" ${status.filmed ? "checked" : ""}>
+                  <label class="form-check-label" for="filmed_${index}">🎥 تم التصوير</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="uploaded_${index}" ${status.uploaded ? "checked" : ""}>
+                  <label class="form-check-label" for="uploaded_${index}">☁️ تم رفع الحلقة</label>
+                </div>
               </div>
             </div>
-          </div>
-        `;
+          `;
+          container.appendChild(col);
+        });
 
-        container.appendChild(col);
-      });
+        index++;
+      }
     });
-  });
-}
-
   }
 
   document.getElementById("editorForm").addEventListener("submit", (e) => {
