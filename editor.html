@@ -66,16 +66,34 @@
           const col = document.createElement("div");
           col.className = "col-md-6";
 
+          const currentEditor = status.editor || "";
+
           col.innerHTML = `
             <div class="card shadow-sm">
               <div class="card-body">
-                <h5 class="card-title">${entry.name}</h5>
-                <p class="card-text">⏰ دخول: ${entry.timeIn || "-"} - 🚪 خروج: ${entry.timeOut || "-"}</p>
-                <div class="form-check">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div>
+                    <h5 class="card-title mb-1">${entry.name}</h5>
+                    <p class="card-text mb-2">⏰ دخول: ${entry.timeIn || "-"} - 🚪 خروج: ${entry.timeOut || "-"}</p>
+                  </div>
+                  <div class="ms-3" style="min-width:180px;">
+                    <label for="editor_${index}" class="form-label mb-1">🧑🏻‍💻 المونتير</label>
+                    <select id="editor_${index}" class="form-select form-select-sm">
+                      <option value="" ${currentEditor==="" ? "selected" : ""}>اختر المونتير</option>
+                      <option value="صلاح" ${currentEditor==="صلاح" ? "selected" : ""}>صلاح</option>
+                      <option value="مرتضى" ${currentEditor==="مرتضى" ? "selected" : ""}>مرتضى</option>
+                      <option value="محمد" ${currentEditor==="محمد" ? "selected" : ""}>محمد</option>
+                    </select>
+                  </div>
+                </div>
+
+                <hr class="my-3">
+
+                <div class="form-check mb-2">
                   <input class="form-check-input" type="checkbox" id="edited_${index}" ${status.edited ? "checked" : ""}>
                   <label class="form-check-label" for="edited_${index}">✅ تمت المنتجة</label>
                 </div>
-                <div class="form-check">
+                <div class="form-check mb-2">
                   <input class="form-check-input" type="checkbox" id="filmed_${index}" ${status.filmed ? "checked" : ""}>
                   <label class="form-check-label" for="filmed_${index}">🎥 تم التصوير</label>
                 </div>
@@ -98,9 +116,10 @@
     e.preventDefault();
 
     entriesArray.forEach((entry, index) => {
-      const edited = document.getElementById(`edited_${index}`).checked;
-      const filmed = document.getElementById(`filmed_${index}`).checked;
+      const edited   = document.getElementById(`edited_${index}`).checked;
+      const filmed   = document.getElementById(`filmed_${index}`).checked;
       const uploaded = document.getElementById(`uploaded_${index}`).checked;
+      const editor   = document.getElementById(`editor_${index}`).value || "";
 
       const statusRef = db.ref(`editingStatus/${currentDate}/${entry.key}`);
 
@@ -110,7 +129,8 @@
         timeOut: entry.timeOut || "",
         edited,
         filmed,
-        uploaded
+        uploaded,
+        editor
       }).catch(error => {
         console.error("❌ خطأ بالحفظ:", error);
       });
